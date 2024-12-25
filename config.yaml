@@ -1,0 +1,301 @@
+allow-lan: true
+bind-address: "*"
+skip-auth-prefixes:
+- 127.0.0.1/8
+- ::1/128
+mode: rule
+log-level: info
+redir-port: 8885
+port: 8886
+socks-port: 8887
+mixed-port: 8888
+tproxy-port: 8889
+ipv6: true
+find-process-mode: strict
+external-controller: 0.0.0.0:9090
+secret: "000"
+geodata-mode: false
+geodata-loader: standard
+geo-auto-update: true
+geo-update-interval: 24
+unified-delay: true
+tcp-concurrent: true
+
+geox-url:
+  geoip: 'https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geoip.dat'
+  geosite: 'https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat'
+  mmdb: 'https://gitlab.com/Masaiki/GeoIP2-CN/-/raw/release/Country.mmdb'
+  asn: 'https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb'
+
+profile:
+  store-selected: true
+  store-fake-ip: false
+
+dns:
+  enable: true
+  prefer-h3: true
+  listen: 0.0.0.0:7874
+  ipv6: true
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  fallback:
+  - tls://1.0.0.1:853
+  - https://cloudflare-dns.com/dns-query
+  - https://dns.google/dns-query
+  fallback-filter:
+    geoip: true
+    ipcidr:
+    - 240.0.0.0/4
+    - 0.0.0.0/32
+
+tun:
+  enable: true
+  stack: mixed
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+  - tcp://any:53
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - +.v2ex.com
+  skip-domain:
+    - Mijia Cloud
+
+proxies:
+
+Sub: &sub
+  type: http
+  interval: 86400
+  health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 120
+      timeout: 2000
+      lazy: true
+
+UseSub:
+  type: select
+  use: &node
+  - 机场1
+  - 机场2
+  - 机场3
+
+Subrules: &rule
+  type: http
+  behavior: classical
+  interval: 3600
+
+Urltest: &url
+  type: url-test
+  url: 'https://www.gstatic.com/generate_204'
+  interval: 20
+  timeout: 2000
+  tolerance: 20
+  hidden: true
+  lazy: true
+
+Fallback: &fall
+  type: fallback
+  url: 'https://www.gstatic.com/generate_204'
+  interval: 10
+  timeout: 2000
+  hidden: true
+  lazy: true
+
+FilterHK: &HK '^(?=.*((?i)🇭🇰|香港|(\b(HK|Hong)\b)))(?!.*((?i)回国|校园|游戏|🎮|(\b(GAME)\b))).*$'
+FilterKR: &KR '^(?=.*((?i)kr|韩国|(\b(KR|Korea|甲骨文2-ipv4|甲骨文2-ipv6)\b)))(?!.*((?i)回国|校园|游戏|🎮|(\b(GAME)\b))).*$'
+FilterJP: &JP '^(?=.*((?i)🇯🇵|日本|川日|东京|大阪|泉日|埼玉|(\b(JP|Japan)\b)))(?!.*((?i)回国|校园|游戏|🎮|(\b(GAME)\b))).*$'
+FilterSG: &SG '^(?=.*((?i)🇸🇬|新加坡|狮|(\b(SG|Singapore)\b)))(?!.*((?i)回国|校园|游戏|🎮|(\b(GAME)\b))).*$'
+FilterUS: &US '^(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|(\b(US|United States)\b)))(?!.*((?i)回国|校园|游戏|专用|🎮|(\b(GAME)\b))).*$'
+FilterGame: &Game '^(?=.*((?i)游戏|🎮|(\b(GAME)\b)))(?!.*((?i)回国|校园)).*$'
+FilterAll: &ALL '^(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|🎮|访问|支持|教程|关注|更新|作者|加入|(\b(USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author)\b|(\d{4}-\d{2}-\d{2}|\d+G)))).*$'
+
+Group: &group
+  type: select
+  proxies:
+  - 📍地区选择
+  - 🇭🇰香港策略
+  - 🇸🇬新加坡策略
+  - 🇯🇵日本策略
+  - 🇺🇸美国策略
+  - kr韩国策略
+
+proxy-providers:
+    
+  机场1:
+    url: "#"
+    path: ./proxy_providers/Sub.yaml
+    <<: *sub
+
+  机场2:
+    url: "#"
+    path: ./proxy_providers/Sub1.yaml
+    <<: *sub
+
+  机场3:
+    url: "订阅3"
+    path: ./proxy_providers/Sub3.yaml
+    <<: *sub
+
+proxy-groups:
+
+- name: "📍地区选择"
+  type: select
+  proxies:
+  - 🇭🇰香港策略
+  - 🇸🇬新加坡策略
+  - 🇯🇵日本策略
+  - 🇺🇸美国策略
+  - kr韩国策略
+
+- name: "🎵Spotify"
+  <<: *group
+  
+- name: "📱Telegram"
+  <<: *group
+
+- name: "🤖AI"
+  <<: *group
+
+#手动区
+- name: "香港手动"
+  type: select
+  use: *node
+  filter: *HK
+
+- name: "新加坡手动"
+  type: select
+  use: *node
+  filter: *SG
+
+- name: "日本手动"
+  type: select
+  use: *node
+  filter: *JP
+
+- name: "美国手动"
+  type: select
+  use: *node
+  filter: *US
+
+- name: "韩国手动"
+  type: select
+  use: *node
+  filter: *KR
+
+#自动区
+
+- name: "🇭🇰香港策略"
+  <<: *fall
+  proxies:
+  - 香港手动
+  - 香港自动
+
+- name: "🇸🇬新加坡策略"
+  <<: *fall
+  proxies:
+  - 新加坡手动
+  - 新加坡自动
+
+- name: "🇯🇵日本策略"
+  <<: *fall
+  proxies:
+  - 日本手动
+  - 日本自动
+
+- name: "🇺🇸美国策略"
+  <<: *fall
+  proxies:
+  - 美国手动
+  - 美国自动
+  
+- name: "kr韩国策略"
+  <<: *fall
+  proxies:
+  - 韩国手动
+  - 韩国自动
+
+- name: "香港自动"
+  <<: *url
+  use: *node
+  filter: *HK
+  
+- name: "新加坡自动"
+  <<: *url
+  use: *node
+  filter: *SG
+
+- name: "日本自动"
+  <<: *url
+  use: *node
+  filter: *JP
+
+- name: "美国自动"
+  <<: *url
+  use: *node
+  filter: *US
+  
+- name: "韩国自动"
+  <<: *url
+  use: *node
+  filter: *KR
+
+rule-providers:
+
+  Lan:
+    <<: *rule
+    url: https://raw.githubusercontent.com/dler-io/Rules/main/Clash/Provider/LAN.yaml
+    path: "./rule_provider/Lan.yaml"
+
+  AD:
+    type: http
+    behavior: domain
+    interval: 3600
+    format: 'text'
+    url: https://adrules.top/adrules_domainset.txt
+    path: "./rule_provider/AD.yaml"
+
+  Spotify:
+    <<: *rule
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Spotify/Spotify.yaml
+    path: "./rule_provider/Spotify.yaml"
+
+  Telegram:
+    <<: *rule
+    url: https://gitlab.com/lodepuly/vpn_tool/-/raw/master/Tool/Clash/Rule/Telegram.yaml
+    path: "./rule_provider/Telegram.yaml"
+
+  AI:
+    <<: *rule
+    url: https://gitlab.com/lodepuly/vpn_tool/-/raw/master/Tool/Clash/Rule/AI.yaml
+    path: "./rule_provider/AI.yaml"
+
+rules:
+- RULE-SET,Lan,DIRECT
+- RULE-SET,AD,REJECT
+- RULE-SET,Telegram,📱Telegram
+- RULE-SET,Spotify,🎵Spotify
+- RULE-SET,AI,🤖AI
+- GEOIP,CN,DIRECT
+- MATCH,📍地区选择
